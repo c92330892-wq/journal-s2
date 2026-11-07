@@ -1,0 +1,43 @@
+name: Scan S2
+
+on:
+  schedule:
+    - cron: "5 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: scan-s2
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer les outils
+        run: pip install pandas numpy requests
+      - name: Lancer le scan
+        run: python journal_s2.py
+        env:
+          OUT_DIR: data
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NOTIF_HORS_REGLE: "0"
+      - name: Enregistrer les résultats
+        run: |
+          git config user.name "scan-s2"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "Scan $(date -u +%Y-%m-%dT%H:%MZ)" || echo "Rien à enregistrer"
+          git pull --rebase
+          git push
+      - name: Prévenir en cas d'échec
+        if: failure()
+        run: |
+          curl -s -H "Title: Journal S2 - echec du scan" -H "Tags: warning" \
+            -d "Le scan automatique n'a pas abouti. Ouvrez l'onglet Actions du dépôt pour voir l'erreur." \
+            "https://ntfy.sh/${{ secrets.NTFY_TOPIC }}"
