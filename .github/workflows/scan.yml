@@ -26,7 +26,7 @@ jobs:
         env:
           OUT_DIR: data
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          NOTIF_HORS_REGLE: "0"
+          NOTIF_HORS_REGLE: "1"
       - name: Enregistrer les résultats
         run: |
           git config user.name "scan-s2"
